@@ -17,6 +17,9 @@ interface CoinProps {
   marketCapUsd: string;
   volumeUsd24Hr: string;
   explorer: string;
+  formatedPrice?: string;
+  formatedMarket?: string;
+  formatedVolume?: string;
 }
 
 interface DataProp {
@@ -31,13 +34,14 @@ export function Home() {
   const [input, setInput] = useState("");
   const [coins, setCoins] = useState<CoinProps[]>([]);
   const navigate = useNavigate();
+  const [offset, setOffset] = useState(0);
 
   
 
   async function getData() {
     const baseUrl = import.meta.env.VITE_API_URL;
     const token = import.meta.env.VITE_API_TOKEN;
-    const url = `${baseUrl}?limit=10`;
+    const url = `${baseUrl}?limit=10&offset=${offset}`;
 
     const options = {
       method: 'GET',
@@ -55,19 +59,38 @@ export function Home() {
           style: "currency",
           currency: "USD"
         })
+
+        const priceCompact = Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+          notation: "compact"
+        })
+
         const formatedResult = coinsData.map((item) => {
           const formated = {
             ...item,
             formatedPrice: price.format(Number(item.priceUsd)),
-            formatedMarket: price.format(Number(item.marketCapUsd))
+            formatedMarket: priceCompact.format(Number(item.marketCapUsd)),
+            formatedVolume: priceCompact.format(Number(item.volumeUsd24Hr))
           }
           return formated;
         })
-        console.log(formatedResult);
+
+        const listCoins =[...coins, ...formatedResult]
+
+        setCoins(listCoins);
       })
   }
 
-  useEffect(() => { getData() }, [])
+  function handleGetMore() {
+    if (offset === 0) {
+      setOffset(10)
+      return;
+    }
+    setOffset(offset + 10)
+  }
+
+  useEffect(() => { getData() }, [offset])
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -102,31 +125,38 @@ export function Home() {
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr className={styles.tr}>
+          {coins.length > 0 && coins.map((item) => (
+                      <tr className={styles.tr} key={item.id}>
             <td className={styles.tdLabel} data-label="Moeda">
               <div>
-                <Link to="/detail/bitcoin">
-                  <span>Bitcoin</span> | BTC
+                <img
+                  className={styles.logo}
+                  alt="Logo Cripto"
+                  src={`https://assets.coincap.io/assets/icons/${item.symbol.toLowerCase()}@2x.png`}
+                />
+                <Link to={`/detail/${item.id}`}>
+                  <span> {item.name}</span> | {item.symbol}
                 </Link>
               </div>
             </td>
             <td className={styles.tdLabel} data-label="Valor mercado">
-              1T
+              {item.formatedMarket}
             </td>
             <td className={styles.tdLabel} data-label="Preço">
-              8.000
+              {item.formatedPrice}
             </td>
             <td className={styles.tdLabel} data-label="Volume">
-              2B
+              {item.formatedVolume}
             </td>
-            <td className={styles.tdLabel} data-label="Mudança 24h">
-              <span>1.20</span>
+            <td className={Number(item.changePercent24Hr) > 0 ? styles.tdProfit : styles.tdLoss} data-label="Mudança 24h">
+              <span> {Number(item.changePercent24Hr).toFixed(3)}</span>
             </td>
           </tr>
+          ))}
         </tbody>
       </table>
 
-      <button>
+      <button onClick={ () => handleGetMore()}>
         Carregar mais...
       </button>
 
