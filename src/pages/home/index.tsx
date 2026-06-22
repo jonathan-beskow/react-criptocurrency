@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styles from './home.module.css';
 
 
-interface CoinProps {
+export interface CoinProps {
   id: string;
   name: string;
   symbol: string;
@@ -22,7 +22,7 @@ interface CoinProps {
   formatedVolume?: string;
 }
 
-interface DataProp {
+export interface DataProp {
   data: CoinProps[];
 }
 
